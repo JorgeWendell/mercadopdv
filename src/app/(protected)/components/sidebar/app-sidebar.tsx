@@ -66,6 +66,11 @@ const data: { navMain: NavGroup[] } = {
               url: "/produtos",
               roles: ["ESTOQUE", "COMPRAS", "ADMINISTRATIVO"] as Role[],
             },
+            {
+              title: "Etiquetas",
+              url: "/etiquetas",
+              roles: ["ESTOQUE", "COMPRAS", "ADMINISTRATIVO"] as Role[],
+            },
           ],
           roles: ["ESTOQUE", "COMPRAS", "ADMINISTRATIVO"] as Role[],
         },
@@ -102,6 +107,11 @@ const data: { navMain: NavGroup[] } = {
           url: "#",
           icon: Receipt,
           items: [
+            {
+              title: "Caixa",
+              url: "/caixa",
+              roles: ["OPERADOR", "ADMINISTRATIVO"] as Role[],
+            },
             {
               title: "Histórico",
               url: "/vendas/historico",

@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import z from "zod";
 
@@ -12,6 +12,9 @@ import {
   salePaymentsTable,
   productsTable,
   stockMovementsTable,
+  cashMovementsTable,
+  paymentMethodsTable,
+  cashSessionsTable,
 } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
@@ -122,6 +125,12 @@ export async function createSale(input: z.infer<typeof createSaleSchema>) {
       }
     }
 
+    const [openCash] = await tx
+      .select({ id: cashSessionsTable.id })
+      .from(cashSessionsTable)
+      .where(and(eq(cashSessionsTable.userId, session.user.id), isNull(cashSessionsTable.closedAt)))
+      .limit(1);
+
     for (const payment of validatedData.payments) {
       const paymentId = nanoid();
 
@@ -133,6 +142,23 @@ export async function createSale(input: z.infer<typeof createSaleSchema>) {
         createdAt: now,
         updatedAt: now,
       });
+
+      const [pm] = await tx
+        .select({ name: paymentMethodsTable.name })
+        .from(paymentMethodsTable)
+        .where(eq(paymentMethodsTable.id, payment.paymentMethodId))
+        .limit(1);
+      if (pm && pm.name.toLowerCase() === "dinheiro" && openCash?.id) {
+        await tx.insert(cashMovementsTable).values({
+          id: nanoid(),
+          sessionId: openCash.id,
+          type: "SALE",
+          amount: payment.amount.toFixed(2),
+          reason: `Venda ${sale.saleNumber}`,
+          createdAt: now,
+          userId: session.user.id,
+        } as any);
+      }
     }
   });
 
