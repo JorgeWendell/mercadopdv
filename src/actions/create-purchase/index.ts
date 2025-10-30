@@ -94,6 +94,7 @@ export async function createPurchase(
           .update(productsTable)
           .set({
             stock: newStock.toFixed(3),
+            purchasePrice: item.unitPrice.toString(),
             updatedAt: now,
           })
           .where(eq(productsTable.id, item.productId));

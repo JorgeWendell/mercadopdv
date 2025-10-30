@@ -123,6 +123,8 @@ export const purchasesTable = pgTable("purchases", {
     .references(() => suppliersTable.id, { onDelete: "restrict" }),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   purchaseDate: timestamp("purchase_date").notNull(),
+  isDraft: boolean("is_draft").default(false),
+  notes: text("notes"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
   createdBy: text("created_by")
@@ -310,4 +312,29 @@ export const promotionRulesTable = pgTable("promotion_rules", {
   timeEnd: text("time_end"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const productBatchesTable = pgTable("product_batches", {
+  id: text("id").primaryKey(),
+  productId: text("product_id").notNull().references(() => productsTable.id, { onDelete: "restrict" }),
+  purchaseItemId: text("purchase_item_id").references(() => purchaseItemsTable.id, { onDelete: "set null" }),
+  batchNumber: text("batch_number").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  manufacturingDate: timestamp("manufacturing_date"),
+  expirationDate: timestamp("expiration_date"),
+  status: text("status").notNull().default("ACTIVE"),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const productDiscardsTable = pgTable("product_discards", {
+  id: text("id").primaryKey(),
+  productId: text("product_id").notNull().references(() => productsTable.id, { onDelete: "restrict" }),
+  batchId: text("batch_id").references(() => productBatchesTable.id, { onDelete: "set null" }),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  reason: text("reason").notNull(),
+  notes: text("notes"),
+  discardedBy: text("discarded_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
+  discardedAt: timestamp("discarded_at").notNull(),
+  createdAt: timestamp("created_at").notNull(),
 });

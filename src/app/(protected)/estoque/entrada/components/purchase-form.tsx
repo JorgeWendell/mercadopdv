@@ -329,7 +329,9 @@ export function PurchaseForm({ open, onOpenChange }: PurchaseFormProps) {
                                         toast.success(
                                           `Produto "${foundProduct.name}" encontrado!`
                                         );
-                                        e.currentTarget.value = "";
+                                        if (e.currentTarget) {
+                                          e.currentTarget.value = "";
+                                        }
 
                                         setTimeout(() => {
                                           setBarcodeSearchState((prev) => {

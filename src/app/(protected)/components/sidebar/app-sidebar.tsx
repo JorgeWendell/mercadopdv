@@ -67,6 +67,21 @@ const data: { navMain: NavGroup[] } = {
               roles: ["ESTOQUE", "COMPRAS", "ADMINISTRATIVO"] as Role[],
             },
             {
+              title: "Inventário",
+              url: "/estoque/inventario",
+              roles: ["ESTOQUE", "ADMINISTRATIVO"] as Role[],
+            },
+            {
+              title: "Validades",
+              url: "/estoque/validades",
+              roles: ["ESTOQUE", "ADMINISTRATIVO"] as Role[],
+            },
+            {
+              title: "Descartes",
+              url: "/estoque/descartes",
+              roles: ["ESTOQUE", "ADMINISTRATIVO"] as Role[],
+            },
+            {
               title: "Etiquetas",
               url: "/etiquetas",
               roles: ["ESTOQUE", "COMPRAS", "ADMINISTRATIVO"] as Role[],
@@ -101,6 +116,24 @@ const data: { navMain: NavGroup[] } = {
             },
           ],
           roles: ["ADMINISTRATIVO"] as Role[],
+        },
+        {
+          title: "Compras",
+          url: "#",
+          icon: Archive,
+          items: [
+            {
+              title: "Sugestão de Compra",
+              url: "/compras/sugestao",
+              roles: ["COMPRAS", "ADMINISTRATIVO"] as Role[],
+            },
+            {
+              title: "Importar NFe (XML)",
+              url: "/compras/importar-nfe",
+              roles: ["COMPRAS", "ADMINISTRATIVO"] as Role[],
+            },
+          ],
+          roles: ["COMPRAS", "ADMINISTRATIVO"] as Role[],
         },
         {
           title: "Vendas",
