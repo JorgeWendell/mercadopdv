@@ -54,18 +54,30 @@ export async function getCashStatus(input?: { start?: Date; end?: Date }) {
 
   const opening = parseFloat(String(open.openingAmount)) || 0;
   const sumIn = movements
-    .filter((m) => m.type === "IN" || m.type === "SALE")
+    .filter((m) => m.type === "IN" || m.type === "SALE" || m.type === "SALE_NONCASH")
     .reduce((acc, m) => acc + (parseFloat(String(m.amount)) || 0), 0);
   const sumOut = movements
     .filter((m) => m.type === "OUT" || m.type === "REFUND")
     .reduce((acc, m) => acc + (parseFloat(String(m.amount)) || 0), 0);
   const balance = opening + sumIn - sumOut;
 
+  const totalsByMethod: Record<string, number> = {};
+  for (const m of movements) {
+    if (m.type === "SALE" || m.type === "SALE_NONCASH") {
+      let method = "Dinheiro";
+      const rs = String(m.reason || "");
+      const idx = rs.indexOf(" - ");
+      if (idx !== -1) method = rs.slice(idx + 3).trim() || method;
+      totalsByMethod[method] = (totalsByMethod[method] || 0) + (parseFloat(String(m.amount)) || 0);
+    }
+  }
+
   return {
     isOpen: true,
     session: open,
     movements,
     totals: { opening, in: sumIn, out: sumOut, balance },
+    totalsByMethod,
   } as const;
 }
 

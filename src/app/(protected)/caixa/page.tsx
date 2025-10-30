@@ -9,9 +9,10 @@ import { useCashMovement } from "@/hooks/mutations/use-cash-movement";
 import { useCloseCash } from "@/hooks/mutations/use-close-cash";
 import { useOpenCash } from "@/hooks/mutations/use-open-cash";
 import { useCashStatus } from "@/hooks/queries/use-cash-status";
+import { usePaymentMethods } from "@/hooks/queries/use-payment-methods";
 
 const openSchema = z.object({ openingAmount: z.coerce.number().min(0) });
-const closeSchema = z.object({ closingAmount: z.coerce.number().min(0) });
+//
 const movementSchema = z.object({
   type: z.enum(["IN", "OUT"]),
   amount: z.coerce.number().positive(),
@@ -19,7 +20,7 @@ const movementSchema = z.object({
 });
 
 type OpenForm = z.infer<typeof openSchema>;
-type CloseForm = z.infer<typeof closeSchema>;
+//
 type MovementForm = z.infer<typeof movementSchema>;
 
 export default function CaixaPage() {
@@ -33,7 +34,7 @@ export default function CaixaPage() {
   const moveMut = useCashMovement();
 
   const openForm = useForm<OpenForm>({ defaultValues: { openingAmount: 0 } });
-  const closeForm = useForm<CloseForm>({ defaultValues: { closingAmount: 0 } });
+  const closeForm = useForm<{ counts: { paymentMethodId: string; amount: number }[]; justification?: string }>({ defaultValues: { counts: [], justification: "" } });
   const movementForm = useForm<MovementForm>({ defaultValues: { type: "IN", amount: 0, reason: "" } });
 
   const onOpen = (values: OpenForm) => {
@@ -41,10 +42,15 @@ export default function CaixaPage() {
     if (!parsed.success) return;
     openMut.mutate(parsed.data);
   };
-  const onClose = (values: CloseForm) => {
-    const parsed = closeSchema.safeParse(values);
-    if (!parsed.success) return;
-    closeMut.mutate(parsed.data);
+  const pm = usePaymentMethods();
+  // autopreencher contagem com base nas vendas registradas por forma
+  const totalsByMethod = (cash.data as any)?.totalsByMethod as Record<string, number> | undefined;
+  if (pm.data && totalsByMethod && (closeForm.getValues("counts") ?? []).length === 0) {
+    const seed = pm.data.map((m) => ({ paymentMethodId: m.id, amount: Number(totalsByMethod[m.name] || 0) }));
+    closeForm.setValue("counts", seed);
+  }
+  const onClose = (values: { counts: { paymentMethodId: string; amount: number }[]; justification?: string }) => {
+    closeMut.mutate(values);
   };
   const onMove = (values: MovementForm) => {
     const parsed = movementSchema.safeParse(values);
@@ -118,7 +124,7 @@ export default function CaixaPage() {
                 <div className="text-sm text-muted-foreground">Valor de abertura</div>
                 <div>R$ {parseFloat(String(cash.data.session.openingAmount)).toFixed(2)}</div>
               </div>
-              <div className="flex items-end justify-end">
+                <div className="flex items-end justify-end">
                 <form
                   className="flex items-end gap-2"
                   onSubmit={(e) => {
@@ -126,9 +132,33 @@ export default function CaixaPage() {
                     closeForm.handleSubmit(onClose)();
                   }}
                 >
-                  <div className="w-48">
-                    <label className="text-sm">Valor de fechamento</label>
-                    <input className="w-full border rounded px-2 py-1" type="number" step="0.01" {...closeForm.register("closingAmount", { valueAsNumber: true })} />
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm">Contagem por forma</div>
+                    <div className="flex flex-col gap-2">
+                      {pm.data?.map((m) => (
+                        <div key={m.id} className="flex items-end gap-2">
+                          <div className="min-w-[140px]"><label className="text-sm">{m.name}</label></div>
+                          <input
+                            className="w-40 border rounded px-2 py-1"
+                            type="number"
+                            step="0.01"
+                            value={closeForm.watch("counts")?.find((c) => c.paymentMethodId === m.id)?.amount ?? 0}
+                            onChange={(e) => {
+                              const amount = Number(e.target.value || 0);
+                              const cur = closeForm.getValues("counts") ?? [];
+                              const idx = cur.findIndex((c) => c.paymentMethodId === m.id);
+                              if (idx >= 0) cur[idx] = { paymentMethodId: m.id, amount };
+                              else cur.push({ paymentMethodId: m.id, amount });
+                              closeForm.setValue("counts", cur);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <label className="text-sm">Justificativa (diferença)</label>
+                      <input className="w-full border rounded px-2 py-1" placeholder="Explique diferenças na contagem em dinheiro" {...closeForm.register("justification")} />
+                    </div>
                   </div>
                   <button className="px-3 py-2 rounded bg-destructive text-destructive-foreground" type="submit" disabled={closeMut.isPending}>Fechar Caixa</button>
                 </form>

@@ -148,13 +148,14 @@ export async function createSale(input: z.infer<typeof createSaleSchema>) {
         .from(paymentMethodsTable)
         .where(eq(paymentMethodsTable.id, payment.paymentMethodId))
         .limit(1);
-      if (pm && pm.name.toLowerCase() === "dinheiro" && openCash?.id) {
+      if (pm && openCash?.id) {
+        const isCash = pm.name.toLowerCase() === "dinheiro";
         await tx.insert(cashMovementsTable).values({
           id: nanoid(),
           sessionId: openCash.id,
-          type: "SALE",
+          type: isCash ? "SALE" : "SALE_NONCASH",
           amount: payment.amount.toFixed(2),
-          reason: `Venda ${sale.saleNumber}`,
+          reason: `Venda ${sale.saleNumber} - ${pm.name}`,
           createdAt: now,
           userId: session.user.id,
         } as any);
